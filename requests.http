@@ -1,0 +1,19 @@
+@baseUrl=http://127.0.0.1:3456
+
+
+### get balance
+
+# @name balance
+GET {{baseUrl}}/balance/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs/UQCGAdFrKHV0a_FahdCqILB-tiVJ3EqXC1TWnnLCKq_aTFvi
+
+
+### send tokens
+
+# @name send
+POST {{baseUrl}}/send/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs
+Content-Type: application/json
+
+{
+    "address": "UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD",
+    "amount": "200"
+}
