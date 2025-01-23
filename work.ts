@@ -20,25 +20,29 @@ async function main() {
     let wallet = await openWallet(client, mnemonics()[0].words);
 
     let jettonMaster: OpenedContract<JettonMinter> = client.open(
-        JettonMinter.createFromAddress(Address.parse("EQCBPTfghL-_KsmnASLFSAMVKTY8lepp2qb5ra4l4XsBwYKM"))
+        JettonMinter.createFromAddress(Address.parse("EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs"))
     );
     let keyPair: KeyPair = await getKeyPair(mnemonics()[0].words);
     const ownerAddress = wallet.address;
     const jettonWalletAddress = await jettonMaster.getWalletAddress(ownerAddress);
     const jettonWalletContract = client.open(JettonWallet.createFromAddress(jettonWalletAddress));
     const to = Address.parse("UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD");
-
+    const walletTonBalance = await wallet.getBalance();
+    const jettonBalance = await jettonWalletContract.getJettonBalance();
+    console.log(walletTonBalance, jettonBalance);
+    let amount = toNano("0.2") / BigInt(1000);
+    console.log(amount, wallet.address);
     const tx = await jettonWalletContract.sendTransfer(
         wallet.sender(keyPair.secretKey),
-        toNano("0.02"),
-        toNano("2000"),
+        toNano("0.01"),
+        amount,
         to,
-        to,
+        wallet.address,
         beginCell().endCell(),
         toNano("0"),
         beginCell().endCell()
     );
-    console.log(`Transferred ${2000} XOPTs to ${to}!`);
+    console.log(`Transferred ${amount} USDTs to ${to}!`);
 }
 
 main().then().catch();

@@ -33,9 +33,10 @@ const getAddress = (a: any): Address | undefined => {
     }
 };
 
-const getAmount = (amount: any): bigint | undefined => {
+const getAmount = (amount: any, divBy: bigint): bigint | undefined => {
     try {
-        return toNano(`${amount}`);
+       let nanoAmount = toNano(`${amount}`);
+       return nanoAmount / divBy;
     } catch (e) {
         console.log(e);
         return;
@@ -114,38 +115,38 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
             });
             return;
         }
-        let amount = getAmount(req.body.amount);
+        let amount = getAmount(req.body.amount, BigInt(1000));
         if (!amount) {
             res.status(403).json({ message: "Amount should be a valid integer!", amount: req.body.amount });
             return;
         }
 
-        const masterJettonBalance: bigint = await jettonWalletContract.getJettonBalance();
-        if (masterJettonBalance < amount) {
+        const jettonBalance: bigint = await jettonWalletContract.getJettonBalance();
+        if (jettonBalance < amount) {
             telegramBot.telegram.sendMessage(
                 telegramChatId,
-                `Bot do not have left enough jetton balance!\nRequired: ${amount}\nBalance: ${masterJettonBalance}`
+                `Bot do not have left enough jetton balance!\nRequired: ${amount}\nBalance: ${jettonBalance}`
             );
             res.status(400).json({ message: "Master wallet do not have enough jetton balance!" });
             return;
         }
 
-        const walletTonBalance = await wallet.getBalance();
+        const tonBalance = await wallet.getBalance();
 
-        if (masterJettonBalance < toNano("0.5")) {
+        if (tonBalance < toNano("0.005")) {
             telegramBot.telegram.sendMessage(
                 telegramChatId,
-                `Bot address do not have left enough TON balance!\nRequired: > 0.5\nBalance: ${walletTonBalance}`
+                `Bot address do not have left enough TON balance!\nRequired: > 0.5\nBalance: ${tonBalance}`
             );
             res.status(400).json({ message: "Master wallet do not have enough TON balance!" });
             return;
         }
         await jettonWalletContract.sendTransfer(
             wallet.sender(keyPair.secretKey),
-            toNano("0"),
+            toNano("0.002"),
             amount,
             recipient,
-            recipient,
+            wallet.address,
             beginCell().endCell(),
             toNano("0"),
             beginCell().endCell()
