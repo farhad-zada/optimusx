@@ -33,9 +33,9 @@ const getAddress = (a: any): Address | undefined => {
     }
 };
 
-const getAmount = (amount: any): Number | undefined => {
+const getAmount = (amount: any): bigint | undefined => {
     try {
-        return Number.parseInt(`${amount}`);
+        return toNano(`${amount}`);
     } catch (e) {
         console.log(e);
         return;
@@ -58,6 +58,13 @@ const getAmount = (amount: any): Number | undefined => {
         process.exit(12);
     }
     telegramBot = new Telegraf(process.env.TELEGRAM_OPTIMUSX_NOTIFICATIONS_BOT_TOKEN);
+    console.log(wallet.address);
+    console.log(jettonMasterAddress);
+    console.log(jettonWalletAddress);
+    telegramBot.telegram.sendMessage(
+        telegramChatId,
+        `Wallet: ${wallet.address}\nJetton Master: ${jettonMasterAddress}\nJetton Wallet: ${jettonWalletAddress}`
+    );
 })();
 
 app.use(express.json());
@@ -113,17 +120,30 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
             return;
         }
 
-        const masterBalance: bigint = await jettonWalletContract.getJettonBalance();
-        if (masterBalance < toNano(amount.toString())) {
-            telegramBot.telegram.sendMessage(telegramChatId, "Bot do not have left enough balance!");
-            telegramBot.telegram.sendMessage(telegramChatId, `${wallet.address}`);
-            res.status(400).json({ message: "Master wallet do not have enough balance!" });
+        const masterJettonBalance: bigint = await jettonWalletContract.getJettonBalance();
+        if (masterJettonBalance < amount) {
+            telegramBot.telegram.sendMessage(
+                telegramChatId,
+                `Bot do not have left enough jetton balance!\nRequired: ${amount}\nBalance: ${masterJettonBalance}`
+            );
+            res.status(400).json({ message: "Master wallet do not have enough jetton balance!" });
+            return;
+        }
+
+        const walletTonBalance = await wallet.getBalance();
+
+        if (masterJettonBalance < toNano("0.5")) {
+            telegramBot.telegram.sendMessage(
+                telegramChatId,
+                `Bot address do not have left enough TON balance!\nRequired: > 0.5\nBalance: ${walletTonBalance}`
+            );
+            res.status(400).json({ message: "Master wallet do not have enough TON balance!" });
             return;
         }
         await jettonWalletContract.sendTransfer(
             wallet.sender(keyPair.secretKey),
             toNano("0"),
-            toNano(`${amount}`),
+            amount,
             recipient,
             recipient,
             beginCell().endCell(),
@@ -134,7 +154,7 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
         console.log(`Transferred ${amount.toString()} USDTs to ${recipient}`);
         telegramBot.telegram.sendMessage(
             telegramChatId,
-            `Transferred ${toNano(amount.toString())} USDTs to ${recipient}`
+            `Transferred ${fromNano(amount.toString())} USDTs to ${recipient}`
         );
         res.status(200).json({
             message: "success!",
