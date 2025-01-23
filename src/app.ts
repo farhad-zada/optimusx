@@ -50,9 +50,7 @@ const getAmount = (amount: any): Number | undefined => {
         throw new Error("MASTER_TOKEN not found in environment!");
     }
     jettonMasterAddress = process.env.MASTER_TOKEN ?? "";
-    jettonMaster = client.open(
-        JettonMinter.createFromAddress(Address.parse(jettonMasterAddress))
-    );
+    jettonMaster = client.open(JettonMinter.createFromAddress(Address.parse(jettonMasterAddress)));
     const jettonWalletAddress = await jettonMaster.getWalletAddress(wallet.address);
     jettonWalletContract = client.open(JettonWallet.createFromAddress(jettonWalletAddress));
     if (!process.env.TELEGRAM_OPTIMUSX_NOTIFICATIONS_BOT_TOKEN) {
@@ -118,7 +116,7 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
         const masterBalance: bigint = await jettonWalletContract.getJettonBalance();
         if (masterBalance < toNano(amount.toString())) {
             telegramBot.telegram.sendMessage(telegramChatId, "Bot do not have left enough balance!");
-            telegramBot.telegram.sendMessage(telegramChatId, `${jettonMasterAddress}`);
+            telegramBot.telegram.sendMessage(telegramChatId, `${wallet.address}`);
             res.status(400).json({ message: "Master wallet do not have enough balance!" });
             return;
         }
