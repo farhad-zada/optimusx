@@ -154,7 +154,7 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
         }
         await jettonWalletContract.sendTransfer(
             wallet.sender(keyPair.secretKey),
-            toNano("0.002"),
+            toNano("0.02"),
             amount,
             recipient,
             wallet.address,
