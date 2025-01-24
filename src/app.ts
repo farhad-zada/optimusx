@@ -83,6 +83,7 @@ app.use(express.json());
 
 app.use("/", (req, res, next) => {
     if (!req.ip || !allowedIps.includes(req.ip)) {
+        sendTelegramMessage(["Unknown IP: " + req.ip?.toString()])
         res.status(403).json({ message: "Thanks!" });
         return;
     }
