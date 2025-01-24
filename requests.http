@@ -4,7 +4,7 @@
 ### get balance
 
 # @name balance
-GET {{baseUrl}}/balance/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs/UQCGAdFrKHV0a_FahdCqILB-tiVJ3EqXC1TWnnLCKq_aTFvi
+GET {{baseUrl}}/balance/xopt/UQCGAdFrKHV0a_FahdCqILB-tiVJ3EqXC1TWnnLCKq_aTFvi
 
 
 ### send tokens

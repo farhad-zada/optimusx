@@ -21,7 +21,7 @@ let jettonMaster: OpenedContract<JettonMinter>;
 let jettonWalletContract: OpenedContract<JettonWallet>;
 let keyPair: KeyPair;
 let telegramBot: Telegraf;
-let telegramChatId = 5108883321;
+let telegramChatIds = [5108883321];
 let allowedIps: string[] = process.env.ALLOWED_IPS?.split(",") ?? "".split(",");
 
 const getAddress = (a: any): Address | undefined => {
@@ -35,13 +35,25 @@ const getAddress = (a: any): Address | undefined => {
 
 const getAmount = (amount: any, divBy: bigint): bigint | undefined => {
     try {
-       let nanoAmount = toNano(`${amount}`);
-       return nanoAmount / divBy;
+        let nanoAmount = toNano(`${amount}`);
+        return nanoAmount / divBy;
     } catch (e) {
         console.log(e);
         return;
     }
 };
+
+async function sendTelegramMessage(messages: string[]) {
+    try {
+        for (let chatId of telegramChatIds) {
+            messages.forEach((message) => {
+                telegramBot.telegram.sendMessage(chatId, message);
+            });
+        }
+    } catch (error) {
+        console.log(error);
+    }
+}
 
 (async () => {
     client = await getCleint();
@@ -62,10 +74,9 @@ const getAmount = (amount: any, divBy: bigint): bigint | undefined => {
     console.log(wallet.address);
     console.log(jettonMasterAddress);
     console.log(jettonWalletAddress);
-    telegramBot.telegram.sendMessage(
-        telegramChatId,
-        `Wallet: ${wallet.address}\nJetton Master: ${jettonMasterAddress}\nJetton Wallet: ${jettonWalletAddress}`
-    );
+    sendTelegramMessage([
+        `Wallet: ${wallet.address}\nJetton Master: ${jettonMasterAddress}\nJetton Wallet: ${jettonWalletAddress}`,
+    ]);
 })();
 
 app.use(express.json());
@@ -78,12 +89,10 @@ app.use("/", (req, res, next) => {
     next();
 });
 
-app.get("/balance/:token/:address", async (req: Request, res: Response) => {
+app.get("/balance/xopt/:address", async (req: Request, res: Response) => {
     try {
-        if (req.params.token !== jettonMasterAddress) {
-            res.status(403).json({ message: `Unallowed token ${req.params.token}` });
-            return;
-        }
+        let xoptMinterAddress = Address.parse("EQCBPTfghL-_KsmnASLFSAMVKTY8lepp2qb5ra4l4XsBwYKM");
+        let xoptMinterContract = client.open(JettonMinter.createFromAddress(xoptMinterAddress));
         const address = getAddress(req.params.address);
         if (!address) {
             res.status(403).json({
@@ -91,10 +100,10 @@ app.get("/balance/:token/:address", async (req: Request, res: Response) => {
             });
             return;
         }
-        const jettonWalletAddress = await jettonMaster.getWalletAddress(address);
-        const jettonWalletContract = client.open(JettonWallet.createFromAddress(jettonWalletAddress));
-        const balance = await jettonWalletContract.getJettonBalance();
-        res.status(200).json({ message: "success", balance: fromNano(balance) });
+        const xoptWalletAddress = await xoptMinterContract.getWalletAddress(address);
+        const xoptWalletContract = client.open(JettonWallet.createFromAddress(xoptWalletAddress));
+        const balance = await xoptWalletContract.getJettonBalance();
+        res.status(200).json({ message: "success", balance: balance.toString(), decimals: 9 });
         return;
     } catch (error) {
         console.log(error);
@@ -123,10 +132,12 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
 
         const jettonBalance: bigint = await jettonWalletContract.getJettonBalance();
         if (jettonBalance < amount) {
-            telegramBot.telegram.sendMessage(
-                telegramChatId,
-                `Bot do not have left enough jetton balance!\nRequired: ${amount}\nBalance: ${jettonBalance}`
-            );
+            let messages = [
+                `Bot do not have left enough jetton balance!\nRequired: ${amount}\nBalance: ${jettonBalance}`,
+            ];
+
+            sendTelegramMessage(messages);
+
             res.status(400).json({ message: "Master wallet do not have enough jetton balance!" });
             return;
         }
@@ -134,10 +145,10 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
         const tonBalance = await wallet.getBalance();
 
         if (tonBalance < toNano("0.005")) {
-            telegramBot.telegram.sendMessage(
-                telegramChatId,
-                `Bot address do not have left enough TON balance!\nRequired: > 0.5\nBalance: ${tonBalance}`
-            );
+            let messages = [
+                `Bot address do not have left enough TON balance!\nRequired: > 0.5\nBalance: ${tonBalance}`,
+            ];
+            sendTelegramMessage(messages);
             res.status(400).json({ message: "Master wallet do not have enough TON balance!" });
             return;
         }
@@ -153,10 +164,7 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
         );
 
         console.log(`Transferred ${amount.toString()} USDTs to ${recipient}`);
-        telegramBot.telegram.sendMessage(
-            telegramChatId,
-            `Transferred ${fromNano(amount.toString())} USDTs to ${recipient}`
-        );
+        sendTelegramMessage([`Transferred ${fromNano(amount.toString())} USDTs to ${recipient}`]);
         res.status(200).json({
             message: "success!",
         });
