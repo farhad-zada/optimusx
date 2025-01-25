@@ -14,6 +14,7 @@ config();
 
 const app = express();
 const PORT = 3456;
+let isProcessing = false;
 let client: TonClient;
 let wallet: OpenedContract<WalletContractV4>;
 let jettonMasterAddress: string;
@@ -55,6 +56,10 @@ async function sendTelegramMessage(messages: string[]) {
     }
 }
 
+async function delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 (async () => {
     client = await getCleint();
     wallet = await openWallet(client, mnemonics()[0].words);
@@ -83,7 +88,7 @@ app.use(express.json());
 
 app.use("/", (req, res, next) => {
     if (!req.ip || !allowedIps.includes(req.ip)) {
-        sendTelegramMessage(["Unknown IP: " + req.ip?.toString()])
+        sendTelegramMessage(["Unknown IP: " + req.ip?.toString()]);
         res.status(403).json({ message: "Thanks!" });
         return;
     }
@@ -114,20 +119,30 @@ app.get("/balance/xopt/:address", async (req: Request, res: Response) => {
 
 app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
     try {
+        if (isProcessing) {
+            res.status(429).json({ message: "Processing another request! Request in a minute!" });
+            return;
+        }
+        isProcessing = true;
         if (req.params.token !== jettonMasterAddress) {
             res.status(403).json({ message: `Unallowed token ${req.params.token}` });
+            isProcessing = false;
             return;
         }
         let recipient = getAddress(req.body.address);
         if (!recipient) {
-            res.status(403).json({
+            res.status(422).json({
                 message: "Query paramether `a` (address) should be a valid TON address!",
             });
+            isProcessing = false;
+
             return;
         }
         let amount = getAmount(req.body.amount, BigInt(1000));
         if (!amount) {
-            res.status(403).json({ message: "Amount should be a valid integer!", amount: req.body.amount });
+            res.status(400).json({ message: "Amount should be a valid integer!", amount: req.body.amount });
+            isProcessing = false;
+
             return;
         }
 
@@ -140,6 +155,8 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
             sendTelegramMessage(messages);
 
             res.status(400).json({ message: "Master wallet do not have enough jetton balance!" });
+            isProcessing = false;
+
             return;
         }
 
@@ -151,6 +168,7 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
             ];
             sendTelegramMessage(messages);
             res.status(400).json({ message: "Master wallet do not have enough TON balance!" });
+            isProcessing = false;
             return;
         }
         await jettonWalletContract.sendTransfer(
@@ -158,19 +176,21 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
             toNano("0.02"),
             amount,
             recipient,
-            wallet.address,
+            Address.parse("UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD"),
             beginCell().endCell(),
-            toNano("0"),
+            toNano("0.002"),
             beginCell().endCell()
         );
 
         console.log(`Transferred ${amount.toString()} USDTs to ${recipient}`);
-        sendTelegramMessage([`Transferred ${fromNano(amount.toString())} USDTs to ${recipient}`]);
         res.status(200).json({
             message: "success!",
         });
+        await delay(45000);
+        isProcessing = false;
     } catch (error) {
         console.log(error);
+        isProcessing = false;
         res.status(500).json({ message: "Something went wrong!" });
     }
 });

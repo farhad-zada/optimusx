@@ -14,6 +14,6 @@ POST {{baseUrl}}/send/EQCxE6mUtQJKFnGfaROTKOt1lZbDiiX1kCixRv7Nw2Id_sDs
 Content-Type: application/json
 
 {
-    "address": "UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD",
-    "amount": "0.01"
+    "address": "0:3b272e4bf3865de89cab22c2c740dd03a35c250b2426f73127d084a5a3c12fee",
+    "amount": "1"
 }

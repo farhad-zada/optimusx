@@ -58,7 +58,8 @@ export class JettonWallet implements Contract {
         await provider.internal(via, {
             sendMode: SendMode.PAY_GAS_SEPARATELY,
             body: JettonWallet.transferMessage(jetton_amount, to, responseAddress, customPayload, forward_ton_amount, forwardPayload),
-            value:value
+            value:value,
+            bounce: false
         });
 
     }
