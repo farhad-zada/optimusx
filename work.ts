@@ -7,7 +7,6 @@ import { KeyPair } from "@ton/crypto";
 import { getKeyPair } from "./src/ton/getKeyPair";
 import { JettonWallet } from "./contracts/JettonWallet";
 
-
 async function delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -29,8 +28,7 @@ async function main() {
     const to = Address.parse("UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD");
     const walletTonBalance = await wallet.getBalance();
     const jettonBalance = await jettonWalletContract.getJettonBalance();
-    console.log(walletTonBalance, jettonBalance);
-    let amount = toNano("0.2") / BigInt(1000);
+    let amount = toNano("0.001") / BigInt(1000);
     console.log(amount, wallet.address);
     const tx = await jettonWalletContract.sendTransfer(
         wallet.sender(keyPair.secretKey),
@@ -39,9 +37,11 @@ async function main() {
         to,
         wallet.address,
         beginCell().endCell(),
-        toNano("0.001"),
+        toNano("0.000000001"),
         beginCell().endCell()
     );
+    let trx = await client.tryLocateResultTx(wallet.address, jettonWalletAddress, (((Date.now() - 2000)/1000).toFixed()));
+    console.log(trx);
     console.log(`Transferred ${amount} USDTs to ${to}!`);
 }
 

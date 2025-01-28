@@ -27,7 +27,7 @@ async function sendWithdraw() {
         if (resData.message == "Something went wrong!") {
             continue;
         }
-        await delay(20000);
+        await delay(50000);
         i++;
     }
 }

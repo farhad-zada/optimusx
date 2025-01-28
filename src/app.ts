@@ -1,11 +1,11 @@
 import express, { Request, Response } from "express";
 import { JettonMinter } from "../contracts/JettonMinter";
-import { Address, TonClient, WalletContractV4, internal } from "@ton/ton";
+import { Address, TonClient, WalletContractV4 } from "@ton/ton";
 import { KeyPair } from "@ton/crypto";
 import { getCleint } from "./ton/getClient";
 import { openWallet } from "./ton/openWallet";
 import { mnemonics } from "../recources/mnemonics";
-import { beginCell, fromNano, OpenedContract, toNano } from "@ton/core";
+import { beginCell, OpenedContract, toNano } from "@ton/core";
 import { getKeyPair } from "./ton/getKeyPair";
 import { JettonWallet } from "../contracts/JettonWallet";
 import { Telegraf } from "telegraf";
@@ -173,12 +173,12 @@ app.post("/send/:token", async (req: Request, res: Response): Promise<any> => {
         }
         await jettonWalletContract.sendTransfer(
             wallet.sender(keyPair.secretKey),
-            toNano("0.02"),
+            toNano("0.05"),
             amount,
             recipient,
-            Address.parse("UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD"),
+            wallet.address, //Address.parse("UQDL_sbXPAzQRh7yNkT5_-Ut8XgyhHTXIuc-SJYWJKcWAgkD"),
             beginCell().endCell(),
-            toNano("0.002"),
+            toNano("0.01"),
             beginCell().endCell()
         );
 
